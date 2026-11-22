@@ -119,26 +119,6 @@
             Scan Resi
           </button>
         </div>
-
-        <!-- Area Kamera Scan Resi -->
-        <div id="resiCameraBox" class="hidden mt-2 rounded-xl bg-slate-950 p-3 text-white space-y-2 border border-slate-800">
-          <div class="flex items-center justify-between text-xs">
-            <span id="resiScanStatus" class="font-semibold text-amber-300">
-              Scan Resi
-            </span>
-            <button
-              id="btnCloseResiCam"
-              type="button"
-              class="rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1 text-xs font-semibold text-slate-200"
-            >
-              Tutup
-            </button>
-          </div>
-          <div class="relative overflow-hidden rounded-lg bg-black aspect-video">
-            <video id="resiVideo" class="w-full h-full object-cover" playsinline muted></video>
-            <div class="pointer-events-none absolute inset-6 border-2 border-amber-400/80 rounded-lg"></div>
-          </div>
-        </div>
       </div>
 
       <!-- 2. Dimensi (Panjang x Lebar x Tinggi dalam cm) + Ukur via Kamera Otomatis -->
@@ -198,74 +178,6 @@
               placeholder="0"
               class="w-full rounded-xl border-2 border-slate-300 focus:border-slate-900 focus:outline-none px-3 py-3 text-sm sm:text-base font-bold text-slate-900 tabular-nums"
             />
-          </div>
-        </div>
-
-        <!-- Panel Kamera Ukur Barang Otomatis Real-Time -->
-        <div id="measureCameraBox" class="hidden mt-2 rounded-xl bg-slate-950 p-3 text-white space-y-2.5 border border-slate-800">
-          <div class="flex items-center justify-between gap-2 text-xs">
-            <div class="flex items-center gap-2">
-              <span id="autoMeasureBadge" class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400"></span>
-              <span class="font-semibold text-slate-200">Auto</span>
-            </div>
-            <button
-              id="btnCloseMeasureCam"
-              type="button"
-              class="rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1 text-xs font-semibold text-slate-200"
-            >
-              Tutup
-            </button>
-          </div>
-
-          <div class="relative overflow-hidden rounded-lg bg-black aspect-video">
-            <video id="measureVideo" class="w-full h-full object-cover" playsinline muted></video>
-            <canvas id="measureCanvas" class="hidden"></canvas>
-            <div class="pointer-events-none absolute inset-4 border border-dashed border-emerald-400/75 rounded-lg"></div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <label for="inputRefWidthCm" class="block text-slate-300 font-semibold mb-1">
-                Acuan Lebar (cm)
-              </label>
-              <input
-                id="inputRefWidthCm"
-                type="number"
-                step="any"
-                min="1"
-                inputmode="decimal"
-                placeholder="100"
-                class="w-full rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-2 text-white font-semibold tabular-nums focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label for="inputEstHeightCm" class="block text-slate-300 font-semibold mb-1">
-                Acuan Tinggi (cm)
-              </label>
-              <input
-                id="inputEstHeightCm"
-                type="number"
-                step="any"
-                min="1"
-                inputmode="decimal"
-                placeholder="30"
-                class="w-full rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-2 text-white font-semibold tabular-nums focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between gap-2 rounded-lg bg-slate-900 px-3 py-2 border border-slate-800">
-            <div id="estDimensionPreview" class="text-xs sm:text-sm font-bold text-amber-300 tabular-nums">
-              0 × 0 × 0 cm
-            </div>
-            <button
-              id="btnApplyEstimate"
-              type="button"
-              disabled
-              class="rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-extrabold px-3.5 py-2 text-xs transition"
-            >
-              Terapkan
-            </button>
           </div>
         </div>
       </div>
@@ -383,6 +295,113 @@
     </section>
   </div>
 
+  <!-- Modal Kamera Full-Screen: Scan Resi (tanpa kotak kuning) -->
+  <div
+    id="resiCameraModal"
+    class="hidden fixed inset-0 z-50 bg-black flex flex-col justify-between text-white"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Scan Resi"
+  >
+    <div class="flex items-center justify-between gap-2 px-4 py-3 bg-slate-950/90 border-b border-slate-800 z-10">
+      <div class="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-300">
+        <span class="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="resiScanStatus">Scan Resi</span>
+      </div>
+      <button
+        id="btnCloseResiCam"
+        type="button"
+        class="rounded-xl bg-slate-800 hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-white"
+      >
+        Tutup
+      </button>
+    </div>
+
+    <div class="relative flex-1 w-full h-full overflow-hidden bg-black">
+      <video id="resiVideo" class="w-full h-full object-cover" playsinline muted></video>
+    </div>
+
+    <div class="px-4 py-3 bg-slate-950/90 border-t border-slate-800 text-xs text-slate-300 flex items-center justify-between gap-2 z-10">
+      <span class="font-semibold">Barcode / QR</span>
+      <span id="resiManualHint" class="text-slate-400"></span>
+    </div>
+  </div>
+
+  <!-- Modal Kamera Full-Screen: Ukur Kamera Otomatis (tanpa kotak hijau) -->
+  <div
+    id="measureCameraModal"
+    class="hidden fixed inset-0 z-50 bg-black flex flex-col justify-between text-white"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Ukur Kamera"
+  >
+    <div class="flex items-center justify-between gap-2 px-4 py-3 bg-slate-950/90 border-b border-slate-800 z-10">
+      <div class="flex items-center gap-2 text-xs sm:text-sm font-bold text-white">
+        <span id="autoMeasureBadge" class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+        <span>Ukur Kamera</span>
+      </div>
+      <button
+        id="btnCloseMeasureCam"
+        type="button"
+        class="rounded-xl bg-slate-800 hover:bg-slate-700 px-3.5 py-2 text-xs font-bold text-white"
+      >
+        Tutup
+      </button>
+    </div>
+
+    <div class="relative flex-1 w-full h-full overflow-hidden bg-black">
+      <video id="measureVideo" class="w-full h-full object-cover" playsinline muted></video>
+      <canvas id="measureCanvas" class="hidden"></canvas>
+    </div>
+
+    <div class="p-4 bg-slate-950/95 border-t border-slate-800 space-y-3 z-10">
+      <div class="grid grid-cols-2 gap-2.5 text-xs">
+        <div>
+          <label for="inputRefWidthCm" class="block text-slate-300 font-semibold mb-1">
+            Acuan Lebar (cm)
+          </label>
+          <input
+            id="inputRefWidthCm"
+            type="number"
+            step="any"
+            min="1"
+            inputmode="decimal"
+            placeholder="100"
+            class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-white font-semibold tabular-nums focus:border-amber-400 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label for="inputEstHeightCm" class="block text-slate-300 font-semibold mb-1">
+            Acuan Tinggi (cm)
+          </label>
+          <input
+            id="inputEstHeightCm"
+            type="number"
+            step="any"
+            min="1"
+            inputmode="decimal"
+            placeholder="30"
+            class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2.5 text-white font-semibold tabular-nums focus:border-amber-400 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 rounded-xl bg-slate-900 px-3.5 py-2.5 border border-slate-800">
+        <div id="estDimensionPreview" class="text-sm font-extrabold text-amber-300 tabular-nums">
+          0 × 0 × 0 cm
+        </div>
+        <button
+          id="btnApplyEstimate"
+          type="button"
+          disabled
+          class="rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-extrabold px-4 py-2.5 text-xs sm:text-sm transition"
+        >
+          Terapkan
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       'use strict';
@@ -423,13 +442,13 @@
         btnCloseAlert: document.getElementById('btnCloseAlert'),
 
         formModeTitle: document.getElementById('formModeTitle'),
-        formModeSubtitle: document.getElementById('formModeSubtitle'),
         btnCancelEdit: document.getElementById('btnCancelEdit'),
 
         inputResi: document.getElementById('inputResi'),
         btnScanResi: document.getElementById('btnScanResi'),
-        resiCameraBox: document.getElementById('resiCameraBox'),
+        resiCameraModal: document.getElementById('resiCameraModal'),
         resiScanStatus: document.getElementById('resiScanStatus'),
+        resiManualHint: document.getElementById('resiManualHint'),
         btnCloseResiCam: document.getElementById('btnCloseResiCam'),
         resiVideo: document.getElementById('resiVideo'),
 
@@ -438,7 +457,7 @@
         inputLebar: document.getElementById('inputLebar'),
         inputTinggi: document.getElementById('inputTinggi'),
 
-        measureCameraBox: document.getElementById('measureCameraBox'),
+        measureCameraModal: document.getElementById('measureCameraModal'),
         btnCloseMeasureCam: document.getElementById('btnCloseMeasureCam'),
         measureVideo: document.getElementById('measureVideo'),
         measureCanvas: document.getElementById('measureCanvas'),
@@ -453,6 +472,11 @@
         inputBerat: document.getElementById('inputBerat'),
         weightModeBadge: document.getElementById('weightModeBadge'),
 
+        selectStatus: document.getElementById('selectStatus'),
+        btnStatusAuto: document.getElementById('btnStatusAuto'),
+        btnStatusSimpan: document.getElementById('btnStatusSimpan'),
+        btnStatusGagal: document.getElementById('btnStatusGagal'),
+
         btnSimpan: document.getElementById('btnSimpan'),
         btnReset: document.getElementById('btnReset'),
 
@@ -466,7 +490,7 @@
       };
 
       // =========================================================================
-      // PWA MANIFEST & SERVICE WORKER (BLOB / DATA URL)
+      // PWA MANIFEST, ICONS (192x192 & 512x512) & SERVICE WORKER (./sw.js)
       // =========================================================================
       function createAppIconDataUrl(size = 192) {
         try {
@@ -548,6 +572,7 @@
           const icon192 = createAppIconDataUrl(192);
           const icon512 = createAppIconDataUrl(512);
           const icons = [];
+
           if (icon192) {
             icons.push({ src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any' });
             const favicon = document.createElement('link');
@@ -561,6 +586,7 @@
             appleIcon.href = icon192;
             document.head.appendChild(appleIcon);
           }
+
           if (icon512) {
             icons.push({ src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any' });
             icons.push({ src: icon512, sizes: '512x512', type: 'image/png', purpose: 'maskable' });
@@ -586,47 +612,49 @@
           document.head.appendChild(linkEl);
 
           if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-            const swCode = `
-              const CACHE_NAME = 'appbulky-cache-v2';
-              self.addEventListener('install', (event) => {
-                event.waitUntil(
-                  caches.open(CACHE_NAME).then((cache) =>
-                    cache.addAll(['./', './index.html']).catch(() => cache.addAll(['./']).catch(() => {}))
-                  )
-                );
-                self.skipWaiting();
-              });
-              self.addEventListener('activate', (event) => {
-                event.waitUntil(
-                  caches.keys().then((keys) =>
-                    Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-                  ).then(() => self.clients.claim())
-                );
-              });
-              self.addEventListener('fetch', (event) => {
-                if (event.request.method !== 'GET') return;
-                event.respondWith(
-                  caches.match(event.request).then((cached) => {
-                    const networkFetch = fetch(event.request)
-                      .then((response) => {
-                        if (response && response.status === 200) {
-                          const clone = response.clone();
-                          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
-                        }
-                        return response;
-                      })
-                      .catch(() => cached);
-                    return cached || networkFetch;
-                  })
-                );
-              });
-            `;
-            const swBlob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(swBlob);
-            navigator.serviceWorker.register(swUrl).catch(() => {});
+            navigator.serviceWorker.register('./sw.js').catch(() => {
+              const swCode = `
+                const CACHE_NAME = 'appbulky-cache-v2';
+                self.addEventListener('install', (event) => {
+                  event.waitUntil(
+                    caches.open(CACHE_NAME).then((cache) =>
+                      cache.addAll(['./', './index.html']).catch(() => cache.addAll(['./']).catch(() => {}))
+                    )
+                  );
+                  self.skipWaiting();
+                });
+                self.addEventListener('activate', (event) => {
+                  event.waitUntil(
+                    caches.keys().then((keys) =>
+                      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+                    ).then(() => self.clients.claim())
+                  );
+                });
+                self.addEventListener('fetch', (event) => {
+                  if (event.request.method !== 'GET') return;
+                  event.respondWith(
+                    caches.match(event.request).then((cached) => {
+                      const networkFetch = fetch(event.request)
+                        .then((response) => {
+                          if (response && response.status === 200) {
+                            const clone = response.clone();
+                            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+                          }
+                          return response;
+                        })
+                        .catch(() => cached);
+                      return cached || networkFetch;
+                    })
+                  );
+                });
+              `;
+              const swBlob = new Blob([swCode], { type: 'application/javascript' });
+              const swUrl = URL.createObjectURL(swBlob);
+              navigator.serviceWorker.register(swUrl).catch(() => {});
+            });
           }
         } catch (err) {
-          // Abaikan jika lingkungan membatasi blob manifest/service worker
+          // Abaikan jika lingkungan membatasi manifest atau service worker
         }
       }
 
@@ -656,7 +684,21 @@
       }
 
       function showAlert(message, type = 'info') {
-        dom.alertBox.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-900', 'border-emerald-300', 'bg-rose-50', 'text-rose-900', 'border-rose-300', 'bg-amber-50', 'text-amber-950', 'border-amber-300', 'bg-slate-100', 'text-slate-900', 'border-slate-300');
+        dom.alertBox.classList.remove(
+          'hidden',
+          'bg-emerald-50',
+          'text-emerald-900',
+          'border-emerald-300',
+          'bg-rose-50',
+          'text-rose-900',
+          'border-rose-300',
+          'bg-amber-50',
+          'text-amber-950',
+          'border-amber-300',
+          'bg-slate-100',
+          'text-slate-900',
+          'border-slate-300'
+        );
 
         if (type === 'success') {
           dom.alertBox.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-300');
@@ -690,6 +732,26 @@
 
       function updateStorageBadge() {
         dom.storageBadge.textContent = String(records.length);
+      }
+
+      function setStatusSelection(mode) {
+        const normalized = mode === 'Simpan' || mode === 'Gagal' ? mode : 'AUTO';
+        dom.selectStatus.value = normalized;
+
+        dom.btnStatusAuto.className =
+          normalized === 'AUTO'
+            ? 'rounded-xl border-2 border-slate-900 bg-slate-900 text-white font-bold py-2.5 px-3 text-xs sm:text-sm transition'
+            : 'rounded-xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold py-2.5 px-3 text-xs sm:text-sm transition';
+
+        dom.btnStatusSimpan.className =
+          normalized === 'Simpan'
+            ? 'rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white font-bold py-2.5 px-3 text-xs sm:text-sm transition'
+            : 'rounded-xl border-2 border-slate-200 bg-slate-50 hover:bg-emerald-50 text-slate-800 font-bold py-2.5 px-3 text-xs sm:text-sm transition';
+
+        dom.btnStatusGagal.className =
+          normalized === 'Gagal'
+            ? 'rounded-xl border-2 border-rose-600 bg-rose-600 text-white font-bold py-2.5 px-3 text-xs sm:text-sm transition'
+            : 'rounded-xl border-2 border-slate-200 bg-slate-50 hover:bg-rose-50 text-slate-800 font-bold py-2.5 px-3 text-xs sm:text-sm transition';
       }
 
       // =========================================================================
@@ -767,7 +829,7 @@
       }
 
       // =========================================================================
-      // KAMERA SCAN NO RESI
+      // KAMERA SCAN NO RESI (FULL-SCREEN MODAL, TANPA KOTAK KUNING)
       // =========================================================================
       function stopResiCamera() {
         if (resiScanInterval) {
@@ -782,13 +844,14 @@
           resiStream.getTracks().forEach((track) => track.stop());
           resiStream = null;
         }
-        dom.resiCameraBox.classList.add('hidden');
+        dom.resiCameraModal.classList.add('hidden');
       }
 
       async function startResiCamera() {
         stopMeasureCamera();
         stopResiCamera();
         hideAlert();
+        dom.resiManualHint.textContent = '';
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           showAlert('Kamera tidak tersedia', 'warning');
@@ -800,7 +863,7 @@
             video: { facingMode: { ideal: 'environment' } },
             audio: false,
           });
-          dom.resiCameraBox.classList.remove('hidden');
+          dom.resiCameraModal.classList.remove('hidden');
           dom.resiVideo.srcObject = resiStream;
           await dom.resiVideo.play();
 
@@ -817,7 +880,8 @@
           }
 
           if (!detector) {
-            dom.resiScanStatus.textContent = 'Manual Resi';
+            dom.resiScanStatus.textContent = 'Scan Resi';
+            dom.resiManualHint.textContent = 'Manual';
             return;
           }
 
@@ -845,7 +909,7 @@
       }
 
       // =========================================================================
-      // KAMERA UKUR BARANG OTOMATIS REAL-TIME (P x L x T + KOREKSI MANUAL)
+      // KAMERA UKUR BARANG OTOMATIS REAL-TIME (FULL-SCREEN MODAL, TANPA KOTAK HIJAU)
       // =========================================================================
       function stopMeasureCamera() {
         if (measureAutoTimer) {
@@ -868,11 +932,11 @@
         }
         lastAutoMeasureTs = 0;
         dom.autoMeasureBadge.className = 'inline-block h-2.5 w-2.5 rounded-full bg-slate-500';
-        dom.measureCameraBox.classList.add('hidden');
+        dom.measureCameraModal.classList.add('hidden');
       }
 
       function runAutoMeasureTick(timestamp) {
-        if (!measureStream || dom.measureCameraBox.classList.contains('hidden')) {
+        if (!measureStream || dom.measureCameraModal.classList.contains('hidden')) {
           return;
         }
         if (!lastAutoMeasureTs || timestamp - lastAutoMeasureTs >= 220) {
@@ -887,7 +951,7 @@
         if (measureRafId) cancelAnimationFrame(measureRafId);
 
         measureAutoTimer = setInterval(() => {
-          if (measureStream && !dom.measureCameraBox.classList.contains('hidden')) {
+          if (measureStream && !dom.measureCameraModal.classList.contains('hidden')) {
             estimateDimensionsFromCamera();
           }
         }, 300);
@@ -916,7 +980,7 @@
             audio: false,
           });
 
-          dom.measureCameraBox.classList.remove('hidden');
+          dom.measureCameraModal.classList.remove('hidden');
           dom.measureVideo.srcObject = measureStream;
 
           const activateLoop = () => {
@@ -1013,6 +1077,7 @@
         dom.inputLebar.value = String(latestCameraEstimate.lebar);
         dom.inputTinggi.value = String(latestCameraEstimate.tinggi);
         syncWeightCalculation();
+        stopMeasureCamera();
         showAlert(
           `${latestCameraEstimate.panjang} × ${latestCameraEstimate.lebar} × ${latestCameraEstimate.tinggi} cm`,
           'success'
@@ -1033,6 +1098,7 @@
         dom.inputLebar.value = '';
         dom.inputTinggi.value = '';
         dom.inputBerat.value = '';
+        setStatusSelection('AUTO');
         dom.weightModeBadge.textContent = 'Otomatis';
         dom.weightModeBadge.className = 'rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800';
 
@@ -1059,7 +1125,10 @@
           !Number.isNaN(tinggiNum) &&
           !Number.isNaN(beratNum);
 
-        const statusValue = isValid ? 'Simpan' : 'Gagal';
+        let statusValue = isValid ? 'Simpan' : 'Gagal';
+        if (dom.selectStatus.value === 'Simpan' || dom.selectStatus.value === 'Gagal') {
+          statusValue = dom.selectStatus.value;
+        }
 
         const entryPayload = {
           id: editingId || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -1104,9 +1173,9 @@
         dom.inputPanjang.value = target.panjang !== '' ? String(target.panjang) : '';
         dom.inputLebar.value = target.lebar !== '' ? String(target.lebar) : '';
         dom.inputTinggi.value = target.tinggi !== '' ? String(target.tinggi) : '';
+        setStatusSelection(target.status === 'Gagal' ? 'Gagal' : 'Simpan');
 
         const autoCalc = computeAutoWeight();
-
         const targetBeratNum = parsePositiveNumber(target.berat);
         if (autoCalc !== null && !Number.isNaN(targetBeratNum) && roundWeight(targetBeratNum) === autoCalc) {
           isManualWeight = false;
@@ -1252,7 +1321,6 @@
       // EKSPOR / DOWNLOAD FILE XLSX (7 KOLOM WAJIB SESUAI PRD)
       // =========================================================================
       function buildPureOoxmlXlsxBlob(rows, headers) {
-        // Generator ZIP + OOXML (.xlsx) murni tanpa ketergantungan jaringan eksternal
         const crcTable = (() => {
           const table = new Uint32Array(256);
           for (let n = 0; n < 256; n++) {
@@ -1379,8 +1447,8 @@
           const lv = new DataView(localHeader.buffer);
           lv.setUint32(0, 0x04034b50, true);
           lv.setUint16(4, 20, true);
-          lv.setUint16(6, 0x0800, true); // UTF-8 filename flag
-          lv.setUint16(8, 0, true); // Store (no compression)
+          lv.setUint16(6, 0x0800, true);
+          lv.setUint16(8, 0, true);
           lv.setUint16(10, 0, true);
           lv.setUint16(12, 0, true);
           lv.setUint32(14, checksum, true);
@@ -1491,7 +1559,7 @@
         dom.btnCloseAlert.addEventListener('click', hideAlert);
 
         dom.btnScanResi.addEventListener('click', () => {
-          if (!dom.resiCameraBox.classList.contains('hidden')) {
+          if (!dom.resiCameraModal.classList.contains('hidden')) {
             stopResiCamera();
           } else {
             startResiCamera();
@@ -1500,7 +1568,7 @@
         dom.btnCloseResiCam.addEventListener('click', stopResiCamera);
 
         dom.btnMeasureCamera.addEventListener('click', () => {
-          if (!dom.measureCameraBox.classList.contains('hidden')) {
+          if (!dom.measureCameraModal.classList.contains('hidden')) {
             stopMeasureCamera();
           } else {
             startMeasureCamera();
@@ -1530,6 +1598,10 @@
           syncWeightCalculation();
         });
 
+        dom.btnStatusAuto.addEventListener('click', () => setStatusSelection('AUTO'));
+        dom.btnStatusSimpan.addEventListener('click', () => setStatusSelection('Simpan'));
+        dom.btnStatusGagal.addEventListener('click', () => setStatusSelection('Gagal'));
+
         dom.btnSimpan.addEventListener('click', handleSaveRecord);
         dom.btnReset.addEventListener('click', () => resetForm(false));
         dom.btnCancelEdit.addEventListener('click', () => resetForm(false));
@@ -1545,6 +1617,7 @@
       updateNetworkBadge();
       loadFromStorage();
       bindEvents();
+      setStatusSelection('AUTO');
       syncWeightCalculation();
       renderHistory();
     })();
