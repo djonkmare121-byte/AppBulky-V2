@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppBulky — Pengukuran Paket Besar Gudang & Hub</title>
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="AppBulky" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      opacity: 0.65;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900 antialiased selection:bg-amber-300 selection:text-slate-950">
+  <div class="mx-auto max-w-2xl px-3 py-4 sm:px-5 sm:py-6 space-y-4">
+    <!-- Header AppBulky & Status Koneksi / LocalStorage -->
+    <header class="rounded-2xl bg-slate-900 text-white p-4 shadow-md border border-slate-800">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5">
+          <div id="appLogoWrapper" class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-slate-950 shadow-sm overflow-hidden">
+            <svg viewBox="0 0 64 64" class="h-8 w-8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Logo AppBulky">
+              <rect x="4" y="4" width="56" height="56" rx="12" fill="#fbbf24"/>
+              <path d="M32 13L50 23.5V43.5L32 54L14 43.5V23.5L32 13Z" fill="#0f172a"/>
+              <path d="M32 13L50 23.5L32 34L14 23.5L32 13Z" fill="#334155"/>
+              <path d="M32 34V54L14 43.5V23.5L32 34Z" fill="#1e293b"/>
+              <path d="M23 18.2L41 28.7" stroke="#fbbf24" stroke-width="3.2" stroke-linecap="round"/>
+              <path d="M18 47L32 55L46 47" stroke="#f8fafc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">AppBulky</h1>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <span
+            id="networkBadge"
+            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+          >
+            <span id="networkDot" class="h-2 w-2 rounded-full bg-emerald-400"></span>
+            <span id="networkLabel">Online</span>
+          </span>
+          <span
+            id="storageBadge"
+            class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-800 text-slate-200 border border-slate-700 tabular-nums"
+          >
+            0
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Kotak Notifikasi / Pesan Status (tanpa alert bawaan browser) -->
+    <div
+      id="alertBox"
+      class="hidden rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold border flex items-center justify-between gap-3"
+      role="status"
+      aria-live="polite"
+    >
+      <span id="alertText"></span>
+      <button
+        id="btnCloseAlert"
+        type="button"
+        class="text-xs font-bold uppercase tracking-wider opacity-75 hover:opacity-100 px-1"
+      >
+        ×
+      </button>
+    </div>
+
+    <!-- Form Utama Pengukuran -->
+    <main class="rounded-2xl bg-white p-4 sm:p-5 shadow-sm border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h2 id="formModeTitle" class="text-base sm:text-lg font-bold text-slate-900">
+          Pengukuran Paket
+        </h2>
+        <button
+          id="btnCancelEdit"
+          type="button"
+          class="hidden rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold px-3 py-2 transition"
+        >
+          Batal
+        </button>
+      </div>
+
+      <!-- 1. Scan / Input No Resi -->
+      <div class="space-y-1.5">
+        <label for="inputResi" class="block text-xs sm:text-sm font-bold text-slate-800">
+          No Resi
+        </label>
+        <div class="flex gap-2">
+          <input
+            id="inputResi"
+            type="text"
+            autocomplete="off"
+            placeholder="No Resi"
+            class="flex-1 min-w-0 rounded-xl border-2 border-slate-300 focus:border-slate-900 focus:outline-none px-3.5 py-3 text-sm sm:text-base font-semibold text-slate-900 placeholder:font-normal placeholder:text-slate-400"
+          />
+          <button
+            id="btnScanResi"
+            type="button"
+            class="shrink-0 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-bold px-4 py-3 text-xs sm:text-sm transition shadow-sm"
+          >
+            Scan Resi
+          </button>
+        </div>
+
+        <!-- Area Kamera Scan Resi -->
+        <div id="resiCameraBox" class="hidden mt-2 rounded-xl bg-slate-950 p-3 text-white space-y-2 border border-slate-800">
+          <div class="flex items-center justify-between text-xs">
+            <span id="resiScanStatus" class="font-semibold text-amber-300">
+              Scan Resi
+            </span>
+            <button
+              id="btnCloseResiCam"
+              type="button"
+              class="rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1 text-xs font-semibold text-slate-200"
+            >
+              Tutup
+            </button>
+          </div>
+          <div class="relative overflow-hidden rounded-lg bg-black aspect-video">
+            <video id="resiVideo" class="w-full h-full object-cover" playsinline muted></video>
+            <div class="pointer-events-none absolute inset-6 border-2 border-amber-400/80 rounded-lg"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Dimensi (Panjang x Lebar x Tinggi dalam cm) + Ukur via Kamera Otomatis -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <label class="block text-xs sm:text-sm font-bold text-slate-800">
+            Dimensi (cm)
+          </label>
+          <button
+            id="btnMeasureCamera"
+            type="button"
+            class="rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-[0.99] text-slate-950 font-extrabold px-3.5 py-2 text-xs transition shadow-sm"
+          >
+            Ukur Kamera
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 sm:gap-3">
+          <div>
+            <label for="inputPanjang" class="block text-xs font-bold text-slate-700 mb-1">
+              Panjang
+            </label>
+            <input
+              id="inputPanjang"
+              type="number"
+              step="any"
+              min="0"
+              inputmode="decimal"
+              placeholder="0"
+              class="w-full rounded-xl border-2 border-slate-300 focus:border-slate-900 focus:outline-none px-3 py-3 text-sm sm:text-base font-bold text-slate-900 tabular-nums"
+            />
+          </div>
+          <div>
+            <label for="inputLebar" class="block text-xs font-bold text-slate-700 mb-1">
+              Lebar
+            </label>
+            <input
+              id="inputLebar"
+              type="number"
+              step="any"
+              min="0"
+              inputmode="decimal"
+              placeholder="0"
+              class="w-full rounded-xl border-2 border-slate-300 focus:border-slate-900 focus:outline-none px-3 py-3 text-sm sm:text-base font-bold text-slate-900 tabular-nums"
+            />
+          </div>
+          <div>
+            <label for="inputTinggi" class="block text-xs font-bold text-slate-700 mb-1">
+              Tinggi
+            </label>
+            <input
+              id="inputTinggi"
+              type="number"
+              step="any"
+              min="0"
+              inputmode="decimal"
+              placeholder="0"
+              class="w-full rounded-xl border-2 border-slate-300 focus:border-slate-900 focus:outline-none px-3 py-3 text-sm sm:text-base font-bold text-slate-900 tabular-nums"
+            />
+          </div>
+        </div>
+
+        <!-- Panel Kamera Ukur Barang Otomatis Real-Time -->
+        <div id="measureCameraBox" class="hidden mt-2 rounded-xl bg-slate-950 p-3 text-white space-y-2.5 border border-slate-800">
+          <div class="flex items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <span id="autoMeasureBadge" class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+              <span class="font-semibold text-slate-200">Auto</span>
+            </div>
+            <button
+              id="btnCloseMeasureCam"
+              type="button"
+              class="rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1 text-xs font-semibold text-slate-200"
+            >
+              Tutup
+            </button>
+          </div>
+
+          <div class="relative overflow-hidden rounded-lg bg-black aspect-video">
+            <video id="measureVideo" class="w-full h-full object-cover" playsinline muted></video>
+            <canvas id="measureCanvas" class="hidden"></canvas>
+            <div class="pointer-events-none absolute inset-4 border border-dashed border-emerald-400/75 rounded-lg"></div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label for="inputRefWidthCm" class="block text-slate-300 font-semibold mb-1">
+                Acuan Lebar (cm)
+              </label>
+              <input
+                id="inputRefWidthCm"
+                type="number"
+                step="any"
+                min="1"
+                inputmode="decimal"
+                placeholder="100"
+                class="w-full rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-2 text-white font-semibold tabular-nums focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label for="inputEstHeightCm" class="block text-slate-300 font-semibold mb-1">
+                Acuan Tinggi (cm)
+              </label>
+              <input
+                id="inputEstHeightCm"
+                type="number"
+                step="any"
+                min="1"
+                inputmode="decimal"
+                placeholder="30"
+                class="w-full rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-2 text-white font-semibold tabular-nums focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 rounded-lg bg-slate-900 px-3 py-2 border border-slate-800">
+            <div id="estDimensionPreview" class="text-xs sm:text-sm font-bold text-amber-300 tabular-nums">
+              0 × 0 × 0 cm
+            </div>
+            <button
+              id="btnApplyEstimate"
+              type="button"
+              disabled
+              class="rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-extrabold px-3.5 py-2 text-xs transition"
+            >
+              Terapkan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Berat (Hitung Otomatis Volumetrik & Input Manual) -->
+      <div class="rounded-xl bg-slate-50 p-3.5 border border-slate-200 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <label for="inputBerat" class="text-xs sm:text-sm font-bold text-slate-800">
+              Berat (kg)
+            </label>
+            <span id="weightModeBadge" class="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
+              Otomatis
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <select
+              id="selectDivider"
+              aria-label="Pembagi Volumetrik"
+              class="rounded-lg border border-slate-300 bg-white px-2.5 py-1 font-bold text-slate-800 tabular-nums focus:border-slate-900 focus:outline-none"
+            >
+              <option value="5000" selected>5000</option>
+              <option value="6000">6000</option>
+            </select>
+            <button
+              id="btnUseAutoWeight"
+              type="button"
+              class="rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-2.5 py-1 transition"
+            >
+              Auto
+            </button>
+          </div>
+        </div>
+
+        <input
+          id="inputBerat"
+          type="number"
+          step="any"
+          min="0"
+          inputmode="decimal"
+          placeholder="0"
+          class="w-full rounded-xl border-2 border-slate-300 focus:border-slate-900 bg-white focus:outline-none px-3.5 py-3 text-base font-extrabold text-slate-900 tabular-nums"
+        />
+      </div>
+
+      <!-- Tombol Aksi Utama (Simpan & Reset) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+        <button
+          id="btnSimpan"
+          type="button"
+          class="sm:col-span-2 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-extrabold py-3.5 px-5 text-sm sm:text-base transition shadow-sm"
+        >
+          Simpan
+        </button>
+        <button
+          id="btnReset"
+          type="button"
+          class="rounded-2xl bg-slate-200 hover:bg-slate-300 active:scale-[0.99] text-slate-900 font-bold py-3.5 px-4 text-sm transition"
+        >
+          Reset
+        </button>
+      </div>
+    </main>
+
+    <!-- Riwayat Pengukuran & Download XLSX -->
+    <section class="rounded-2xl bg-white p-4 sm:p-5 shadow-sm border border-slate-200 space-y-3.5">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">Riwayat</h2>
+          <div class="flex items-center gap-1.5 text-xs font-bold tabular-nums">
+            <span id="savedCountText" class="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5">0</span>
+            <span id="failedCountText" class="rounded-full bg-rose-100 text-rose-800 px-2 py-0.5">0</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            id="btnDownloadXlsx"
+            type="button"
+            class="rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold px-3.5 py-2.5 text-xs sm:text-sm transition shadow-sm"
+          >
+            Download XLSX
+          </button>
+          <button
+            id="btnClearHistory"
+            type="button"
+            class="rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold px-3 py-2.5 text-xs sm:text-sm transition"
+          >
+            Hapus Semua
+          </button>
+        </div>
+      </div>
+
+      <!-- Pencarian & Filter Status -->
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input
+          id="searchResiInput"
+          type="search"
+          placeholder="Cari No Resi"
+          class="flex-1 min-w-0 rounded-xl border border-slate-300 focus:border-slate-900 focus:outline-none px-3.5 py-2.5 text-xs sm:text-sm font-medium text-slate-900"
+        />
+        <select
+          id="filterStatusSelect"
+          aria-label="Filter Status"
+          class="rounded-xl border border-slate-300 bg-white focus:border-slate-900 focus:outline-none px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800"
+        >
+          <option value="ALL">Semua</option>
+          <option value="Simpan">Simpan</option>
+          <option value="Gagal">Gagal</option>
+        </select>
+      </div>
+
+      <!-- Daftar Item Riwayat -->
+      <div id="historyList" class="space-y-2.5"></div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // KONFIGURASI & KUNCI STORAGE APP BULKY
+      // =========================================================================
+      const STORAGE_KEY = 'AppBulky_records_v1';
+      const DIVIDER_STORAGE_KEY = 'AppBulky_divider_v1';
+      const EXPORT_COLUMNS = ['Tanggal', 'No Resi', 'Berat', 'Panjang', 'Lebar', 'Tinggi', 'Status'];
+
+      // =========================================================================
+      // STATE APLIKASI
+      // =========================================================================
+      let records = [];
+      let editingId = null;
+      let isManualWeight = false;
+      let latestCameraEstimate = null;
+
+      let resiStream = null;
+      let resiScanInterval = null;
+      let measureStream = null;
+      let measureAutoTimer = null;
+      let measureRafId = null;
+      let lastAutoMeasureTs = 0;
+
+      // =========================================================================
+      // REFERENSI ELEMEN DOM
+      // =========================================================================
+      const dom = {
+        networkBadge: document.getElementById('networkBadge'),
+        networkDot: document.getElementById('networkDot'),
+        networkLabel: document.getElementById('networkLabel'),
+        storageBadge: document.getElementById('storageBadge'),
+
+        alertBox: document.getElementById('alertBox'),
+        alertText: document.getElementById('alertText'),
+        btnCloseAlert: document.getElementById('btnCloseAlert'),
+
+        formModeTitle: document.getElementById('formModeTitle'),
+        formModeSubtitle: document.getElementById('formModeSubtitle'),
+        btnCancelEdit: document.getElementById('btnCancelEdit'),
+
+        inputResi: document.getElementById('inputResi'),
+        btnScanResi: document.getElementById('btnScanResi'),
+        resiCameraBox: document.getElementById('resiCameraBox'),
+        resiScanStatus: document.getElementById('resiScanStatus'),
+        btnCloseResiCam: document.getElementById('btnCloseResiCam'),
+        resiVideo: document.getElementById('resiVideo'),
+
+        btnMeasureCamera: document.getElementById('btnMeasureCamera'),
+        inputPanjang: document.getElementById('inputPanjang'),
+        inputLebar: document.getElementById('inputLebar'),
+        inputTinggi: document.getElementById('inputTinggi'),
+
+        measureCameraBox: document.getElementById('measureCameraBox'),
+        btnCloseMeasureCam: document.getElementById('btnCloseMeasureCam'),
+        measureVideo: document.getElementById('measureVideo'),
+        measureCanvas: document.getElementById('measureCanvas'),
+        autoMeasureBadge: document.getElementById('autoMeasureBadge'),
+        inputRefWidthCm: document.getElementById('inputRefWidthCm'),
+        inputEstHeightCm: document.getElementById('inputEstHeightCm'),
+        estDimensionPreview: document.getElementById('estDimensionPreview'),
+        btnApplyEstimate: document.getElementById('btnApplyEstimate'),
+
+        selectDivider: document.getElementById('selectDivider'),
+        btnUseAutoWeight: document.getElementById('btnUseAutoWeight'),
+        inputBerat: document.getElementById('inputBerat'),
+        weightModeBadge: document.getElementById('weightModeBadge'),
+
+        btnSimpan: document.getElementById('btnSimpan'),
+        btnReset: document.getElementById('btnReset'),
+
+        savedCountText: document.getElementById('savedCountText'),
+        failedCountText: document.getElementById('failedCountText'),
+        btnDownloadXlsx: document.getElementById('btnDownloadXlsx'),
+        btnClearHistory: document.getElementById('btnClearHistory'),
+        searchResiInput: document.getElementById('searchResiInput'),
+        filterStatusSelect: document.getElementById('filterStatusSelect'),
+        historyList: document.getElementById('historyList'),
+      };
+
+      // =========================================================================
+      // PWA MANIFEST & SERVICE WORKER (BLOB / DATA URL)
+      // =========================================================================
+      function createAppIconDataUrl(size = 192) {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          const s = size / 64;
+
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.roundRect(0, 0, size, size, Math.round(size * 0.22));
+          ctx.fill();
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.roundRect(4 * s, 4 * s, 56 * s, 56 * s, 12 * s);
+          ctx.fill();
+
+          // Kubus paket isometrik
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.moveTo(32 * s, 13 * s);
+          ctx.lineTo(50 * s, 23.5 * s);
+          ctx.lineTo(50 * s, 43.5 * s);
+          ctx.lineTo(32 * s, 54 * s);
+          ctx.lineTo(14 * s, 43.5 * s);
+          ctx.lineTo(14 * s, 23.5 * s);
+          ctx.closePath();
+          ctx.fill();
+
+          // Sisi atas
+          ctx.fillStyle = '#334155';
+          ctx.beginPath();
+          ctx.moveTo(32 * s, 13 * s);
+          ctx.lineTo(50 * s, 23.5 * s);
+          ctx.lineTo(32 * s, 34 * s);
+          ctx.lineTo(14 * s, 23.5 * s);
+          ctx.closePath();
+          ctx.fill();
+
+          // Sisi kiri
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.moveTo(32 * s, 34 * s);
+          ctx.lineTo(50 * s, 23.5 * s);
+          ctx.lineTo(50 * s, 43.5 * s);
+          ctx.lineTo(32 * s, 54 * s);
+          ctx.closePath();
+          ctx.fill();
+
+          // Pita segel paket
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 3.2 * s;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(23 * s, 18.2 * s);
+          ctx.lineTo(41 * s, 28.7 * s);
+          ctx.stroke();
+
+          // Garis ukur bawah
+          ctx.strokeStyle = '#f8fafc';
+          ctx.lineWidth = 2.5 * s;
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(18 * s, 47 * s);
+          ctx.lineTo(32 * s, 55 * s);
+          ctx.lineTo(46 * s, 47 * s);
+          ctx.stroke();
+
+          return canvas.toDataURL('image/png');
+        } catch (err) {
+          return '';
+        }
+      }
+
+      function setupPwaSupport() {
+        try {
+          const icon192 = createAppIconDataUrl(192);
+          const icon512 = createAppIconDataUrl(512);
+          const icons = [];
+          if (icon192) {
+            icons.push({ src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any' });
+            const favicon = document.createElement('link');
+            favicon.rel = 'icon';
+            favicon.type = 'image/png';
+            favicon.href = icon192;
+            document.head.appendChild(favicon);
+
+            const appleIcon = document.createElement('link');
+            appleIcon.rel = 'apple-touch-icon';
+            appleIcon.href = icon192;
+            document.head.appendChild(appleIcon);
+          }
+          if (icon512) {
+            icons.push({ src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any' });
+            icons.push({ src: icon512, sizes: '512x512', type: 'image/png', purpose: 'maskable' });
+          }
+
+          const manifest = {
+            id: './',
+            name: 'AppBulky',
+            short_name: 'AppBulky',
+            start_url: './',
+            scope: './',
+            display: 'standalone',
+            orientation: 'portrait',
+            background_color: '#0f172a',
+            theme_color: '#0f172a',
+            icons,
+          };
+          const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+          const manifestUrl = URL.createObjectURL(manifestBlob);
+          const linkEl = document.createElement('link');
+          linkEl.rel = 'manifest';
+          linkEl.href = manifestUrl;
+          document.head.appendChild(linkEl);
+
+          if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+            const swCode = `
+              const CACHE_NAME = 'appbulky-cache-v2';
+              self.addEventListener('install', (event) => {
+                event.waitUntil(
+                  caches.open(CACHE_NAME).then((cache) =>
+                    cache.addAll(['./', './index.html']).catch(() => cache.addAll(['./']).catch(() => {}))
+                  )
+                );
+                self.skipWaiting();
+              });
+              self.addEventListener('activate', (event) => {
+                event.waitUntil(
+                  caches.keys().then((keys) =>
+                    Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+                  ).then(() => self.clients.claim())
+                );
+              });
+              self.addEventListener('fetch', (event) => {
+                if (event.request.method !== 'GET') return;
+                event.respondWith(
+                  caches.match(event.request).then((cached) => {
+                    const networkFetch = fetch(event.request)
+                      .then((response) => {
+                        if (response && response.status === 200) {
+                          const clone = response.clone();
+                          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+                        }
+                        return response;
+                      })
+                      .catch(() => cached);
+                    return cached || networkFetch;
+                  })
+                );
+              });
+            `;
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swUrl).catch(() => {});
+          }
+        } catch (err) {
+          // Abaikan jika lingkungan membatasi blob manifest/service worker
+        }
+      }
+
+      // =========================================================================
+      // UTILITAS TANGGAL, ANGKA & NOTIFIKASI
+      // =========================================================================
+      function formatNowDate() {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      }
+
+      function formatFileDate() {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      }
+
+      function parsePositiveNumber(val) {
+        if (val === null || val === undefined || String(val).trim() === '') return NaN;
+        const num = Number(val);
+        return Number.isFinite(num) && num > 0 ? num : NaN;
+      }
+
+      function roundWeight(val) {
+        return Number(val.toFixed(2));
+      }
+
+      function showAlert(message, type = 'info') {
+        dom.alertBox.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-900', 'border-emerald-300', 'bg-rose-50', 'text-rose-900', 'border-rose-300', 'bg-amber-50', 'text-amber-950', 'border-amber-300', 'bg-slate-100', 'text-slate-900', 'border-slate-300');
+
+        if (type === 'success') {
+          dom.alertBox.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-300');
+        } else if (type === 'error') {
+          dom.alertBox.classList.add('bg-rose-50', 'text-rose-900', 'border-rose-300');
+        } else if (type === 'warning') {
+          dom.alertBox.classList.add('bg-amber-50', 'text-amber-950', 'border-amber-300');
+        } else {
+          dom.alertBox.classList.add('bg-slate-100', 'text-slate-900', 'border-slate-300');
+        }
+
+        dom.alertText.textContent = message;
+      }
+
+      function hideAlert() {
+        dom.alertBox.classList.add('hidden');
+      }
+
+      function updateNetworkBadge() {
+        const online = navigator.onLine;
+        if (online) {
+          dom.networkBadge.className = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+          dom.networkDot.className = 'h-2 w-2 rounded-full bg-emerald-400';
+          dom.networkLabel.textContent = 'Online';
+        } else {
+          dom.networkBadge.className = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/30';
+          dom.networkDot.className = 'h-2 w-2 rounded-full bg-amber-400';
+          dom.networkLabel.textContent = 'Offline';
+        }
+      }
+
+      function updateStorageBadge() {
+        dom.storageBadge.textContent = String(records.length);
+      }
+
+      // =========================================================================
+      // PENYIMPANAN LOCAL STORAGE
+      // =========================================================================
+      function loadFromStorage() {
+        try {
+          const savedDivider = localStorage.getItem(DIVIDER_STORAGE_KEY);
+          if (savedDivider === '5000' || savedDivider === '6000') {
+            dom.selectDivider.value = savedDivider;
+          }
+
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) {
+            records = [];
+            return;
+          }
+          const parsed = JSON.parse(raw);
+          records = Array.isArray(parsed)
+            ? parsed.map((item) => ({
+                id: String(item.id || Date.now() + Math.random()),
+                tanggal: String(item.tanggal || ''),
+                noResi: String(item.noResi || ''),
+                berat: item.berat ?? '',
+                panjang: item.panjang ?? '',
+                lebar: item.lebar ?? '',
+                tinggi: item.tinggi ?? '',
+                status: item.status === 'Gagal' ? 'Gagal' : 'Simpan',
+              }))
+            : [];
+        } catch (err) {
+          records = [];
+          showAlert('Error localStorage', 'error');
+        }
+      }
+
+      function saveToStorage() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+          localStorage.setItem(DIVIDER_STORAGE_KEY, dom.selectDivider.value);
+          updateStorageBadge();
+          return true;
+        } catch (err) {
+          showAlert('Error localStorage', 'error');
+          return false;
+        }
+      }
+
+      // =========================================================================
+      // HITUNG BERAT VOLUMETRIK OTOMATIS & MANUAL OVERRIDE
+      // =========================================================================
+      function computeAutoWeight() {
+        const p = parsePositiveNumber(dom.inputPanjang.value);
+        const l = parsePositiveNumber(dom.inputLebar.value);
+        const t = parsePositiveNumber(dom.inputTinggi.value);
+        const divider = Number(dom.selectDivider.value) || 5000;
+
+        if (Number.isNaN(p) || Number.isNaN(l) || Number.isNaN(t)) {
+          return null;
+        }
+        return roundWeight((p * l * t) / divider);
+      }
+
+      function syncWeightCalculation() {
+        const autoVal = computeAutoWeight();
+
+        if (!isManualWeight) {
+          dom.inputBerat.value = autoVal !== null ? String(autoVal) : '';
+          dom.weightModeBadge.textContent = 'Otomatis';
+          dom.weightModeBadge.className = 'rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800';
+        } else {
+          dom.weightModeBadge.textContent = 'Manual';
+          dom.weightModeBadge.className = 'rounded-md bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800';
+        }
+      }
+
+      // =========================================================================
+      // KAMERA SCAN NO RESI
+      // =========================================================================
+      function stopResiCamera() {
+        if (resiScanInterval) {
+          clearInterval(resiScanInterval);
+          resiScanInterval = null;
+        }
+        if (dom.resiVideo) {
+          dom.resiVideo.pause();
+          dom.resiVideo.srcObject = null;
+        }
+        if (resiStream) {
+          resiStream.getTracks().forEach((track) => track.stop());
+          resiStream = null;
+        }
+        dom.resiCameraBox.classList.add('hidden');
+      }
+
+      async function startResiCamera() {
+        stopMeasureCamera();
+        stopResiCamera();
+        hideAlert();
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showAlert('Kamera tidak tersedia', 'warning');
+          return;
+        }
+
+        try {
+          resiStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false,
+          });
+          dom.resiCameraBox.classList.remove('hidden');
+          dom.resiVideo.srcObject = resiStream;
+          await dom.resiVideo.play();
+
+          const hasBarcodeDetector = typeof window.BarcodeDetector === 'function';
+          let detector = null;
+          if (hasBarcodeDetector) {
+            try {
+              detector = new window.BarcodeDetector({
+                formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'qr_code', 'upc_a', 'upc_e', 'codabar', 'itf'],
+              });
+            } catch (e) {
+              detector = new window.BarcodeDetector();
+            }
+          }
+
+          if (!detector) {
+            dom.resiScanStatus.textContent = 'Manual Resi';
+            return;
+          }
+
+          dom.resiScanStatus.textContent = 'Scan Resi';
+
+          resiScanInterval = setInterval(async () => {
+            if (!resiStream || dom.resiVideo.readyState < 2) return;
+            try {
+              const barcodes = await detector.detect(dom.resiVideo);
+              if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                const scannedCode = String(barcodes[0].rawValue).trim();
+                if (scannedCode) {
+                  dom.inputResi.value = scannedCode;
+                  stopResiCamera();
+                  showAlert(`Resi: ${scannedCode}`, 'success');
+                }
+              }
+            } catch (err) {
+              // Abaikan frame yang gagal terdeteksi
+            }
+          }, 350);
+        } catch (err) {
+          showAlert('Kamera tidak dapat dibuka', 'warning');
+        }
+      }
+
+      // =========================================================================
+      // KAMERA UKUR BARANG OTOMATIS REAL-TIME (P x L x T + KOREKSI MANUAL)
+      // =========================================================================
+      function stopMeasureCamera() {
+        if (measureAutoTimer) {
+          clearInterval(measureAutoTimer);
+          measureAutoTimer = null;
+        }
+        if (measureRafId) {
+          cancelAnimationFrame(measureRafId);
+          measureRafId = null;
+        }
+        if (dom.measureVideo) {
+          dom.measureVideo.onloadedmetadata = null;
+          dom.measureVideo.onplaying = null;
+          dom.measureVideo.pause();
+          dom.measureVideo.srcObject = null;
+        }
+        if (measureStream) {
+          measureStream.getTracks().forEach((track) => track.stop());
+          measureStream = null;
+        }
+        lastAutoMeasureTs = 0;
+        dom.autoMeasureBadge.className = 'inline-block h-2.5 w-2.5 rounded-full bg-slate-500';
+        dom.measureCameraBox.classList.add('hidden');
+      }
+
+      function runAutoMeasureTick(timestamp) {
+        if (!measureStream || dom.measureCameraBox.classList.contains('hidden')) {
+          return;
+        }
+        if (!lastAutoMeasureTs || timestamp - lastAutoMeasureTs >= 220) {
+          lastAutoMeasureTs = timestamp;
+          estimateDimensionsFromCamera();
+        }
+        measureRafId = requestAnimationFrame(runAutoMeasureTick);
+      }
+
+      function startAutoMeasureLoops() {
+        if (measureAutoTimer) clearInterval(measureAutoTimer);
+        if (measureRafId) cancelAnimationFrame(measureRafId);
+
+        measureAutoTimer = setInterval(() => {
+          if (measureStream && !dom.measureCameraBox.classList.contains('hidden')) {
+            estimateDimensionsFromCamera();
+          }
+        }, 300);
+
+        measureRafId = requestAnimationFrame(runAutoMeasureTick);
+      }
+
+      async function startMeasureCamera() {
+        stopResiCamera();
+        stopMeasureCamera();
+        hideAlert();
+
+        latestCameraEstimate = null;
+        dom.btnApplyEstimate.disabled = true;
+        dom.autoMeasureBadge.className = 'inline-block h-2.5 w-2.5 rounded-full bg-amber-400 animate-ping';
+        dom.estDimensionPreview.textContent = '0 × 0 × 0 cm';
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showAlert('Kamera tidak tersedia', 'warning');
+          return;
+        }
+
+        try {
+          measureStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false,
+          });
+
+          dom.measureCameraBox.classList.remove('hidden');
+          dom.measureVideo.srcObject = measureStream;
+
+          const activateLoop = () => {
+            dom.autoMeasureBadge.className = 'inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse';
+            startAutoMeasureLoops();
+            estimateDimensionsFromCamera();
+          };
+
+          dom.measureVideo.onloadedmetadata = () => {
+            dom.measureVideo.play().then(activateLoop).catch(activateLoop);
+          };
+          dom.measureVideo.onplaying = activateLoop;
+
+          await dom.measureVideo.play();
+          activateLoop();
+        } catch (err) {
+          dom.autoMeasureBadge.className = 'inline-block h-2.5 w-2.5 rounded-full bg-rose-500';
+          showAlert('Kamera tidak dapat dibuka', 'warning');
+        }
+      }
+
+      function estimateDimensionsFromCamera() {
+        if (!measureStream || !dom.measureVideo) return;
+
+        const parsedRefW = parsePositiveNumber(dom.inputRefWidthCm.value);
+        const parsedEstH = parsePositiveNumber(dom.inputEstHeightCm.value);
+
+        const refWidthCm = !Number.isNaN(parsedRefW) ? parsedRefW : 100;
+        const estHeightCm = !Number.isNaN(parsedEstH) ? parsedEstH : 30;
+
+        if (dom.measureVideo.readyState < 2) {
+          return;
+        }
+
+        const vw = dom.measureVideo.videoWidth || 640;
+        const vh = dom.measureVideo.videoHeight || 480;
+        const sampleW = 160;
+        const sampleH = Math.max(120, Math.round((vh / vw) * sampleW));
+
+        dom.measureCanvas.width = sampleW;
+        dom.measureCanvas.height = sampleH;
+        const ctx = dom.measureCanvas.getContext('2d');
+        ctx.drawImage(dom.measureVideo, 0, 0, sampleW, sampleH);
+
+        const startX = Math.floor(sampleW * 0.12);
+        const endX = Math.floor(sampleW * 0.88);
+        const startY = Math.floor(sampleH * 0.12);
+        const endY = Math.floor(sampleH * 0.88);
+
+        const data = ctx.getImageData(0, 0, sampleW, sampleH).data;
+        let minX = endX;
+        let maxX = startX;
+        let minY = endY;
+        let maxY = startY;
+        let edgeHits = 0;
+
+        for (let y = startY; y < endY - 1; y++) {
+          for (let x = startX; x < endX - 1; x++) {
+            const i1 = (y * sampleW + x) * 4;
+            const i2 = (y * sampleW + (x + 1)) * 4;
+            const i3 = ((y + 1) * sampleW + x) * 4;
+
+            const lum1 = 0.299 * data[i1] + 0.587 * data[i1 + 1] + 0.114 * data[i1 + 2];
+            const lum2 = 0.299 * data[i2] + 0.587 * data[i2 + 1] + 0.114 * data[i2 + 2];
+            const lum3 = 0.299 * data[i3] + 0.587 * data[i3 + 1] + 0.114 * data[i3 + 2];
+
+            if (Math.abs(lum1 - lum2) > 34 || Math.abs(lum1 - lum3) > 34) {
+              edgeHits++;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+
+        const ratioW = edgeHits > 20 && maxX > minX ? (maxX - minX) / sampleW : 0.55;
+        const ratioH = edgeHits > 20 && maxY > minY ? (maxY - minY) / sampleH : 0.4;
+
+        const panjang = Math.max(1, Number((ratioW * refWidthCm).toFixed(1)));
+        const lebar = Math.max(1, Number((ratioH * refWidthCm).toFixed(1)));
+        const tinggi = Math.max(1, Number(estHeightCm.toFixed(1)));
+
+        latestCameraEstimate = { panjang, lebar, tinggi };
+
+        dom.autoMeasureBadge.className = 'inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse';
+        dom.estDimensionPreview.textContent = `${panjang} × ${lebar} × ${tinggi} cm`;
+        dom.btnApplyEstimate.disabled = false;
+      }
+
+      function applyCameraEstimateToInputs() {
+        if (!latestCameraEstimate) return;
+        dom.inputPanjang.value = String(latestCameraEstimate.panjang);
+        dom.inputLebar.value = String(latestCameraEstimate.lebar);
+        dom.inputTinggi.value = String(latestCameraEstimate.tinggi);
+        syncWeightCalculation();
+        showAlert(
+          `${latestCameraEstimate.panjang} × ${latestCameraEstimate.lebar} × ${latestCameraEstimate.tinggi} cm`,
+          'success'
+        );
+      }
+
+      // =========================================================================
+      // SIMPAN, EDIT, HAPUS & RESET FORM
+      // =========================================================================
+      function resetForm(keepAlert = false) {
+        editingId = null;
+        isManualWeight = false;
+        latestCameraEstimate = null;
+        dom.btnApplyEstimate.disabled = true;
+
+        dom.inputResi.value = '';
+        dom.inputPanjang.value = '';
+        dom.inputLebar.value = '';
+        dom.inputTinggi.value = '';
+        dom.inputBerat.value = '';
+        dom.weightModeBadge.textContent = 'Otomatis';
+        dom.weightModeBadge.className = 'rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800';
+
+        dom.formModeTitle.textContent = 'Pengukuran Paket';
+        dom.btnCancelEdit.classList.add('hidden');
+        dom.btnSimpan.textContent = 'Simpan';
+
+        if (!keepAlert) {
+          hideAlert();
+        }
+      }
+
+      function handleSaveRecord() {
+        const noResi = dom.inputResi.value.trim();
+        const panjangNum = parsePositiveNumber(dom.inputPanjang.value);
+        const lebarNum = parsePositiveNumber(dom.inputLebar.value);
+        const tinggiNum = parsePositiveNumber(dom.inputTinggi.value);
+        const beratNum = parsePositiveNumber(dom.inputBerat.value);
+
+        const isValid =
+          noResi.length > 0 &&
+          !Number.isNaN(panjangNum) &&
+          !Number.isNaN(lebarNum) &&
+          !Number.isNaN(tinggiNum) &&
+          !Number.isNaN(beratNum);
+
+        const statusValue = isValid ? 'Simpan' : 'Gagal';
+
+        const entryPayload = {
+          id: editingId || `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          tanggal: formatNowDate(),
+          noResi: noResi || '-',
+          berat: !Number.isNaN(beratNum) ? roundWeight(beratNum) : (dom.inputBerat.value.trim() || ''),
+          panjang: !Number.isNaN(panjangNum) ? panjangNum : (dom.inputPanjang.value.trim() || ''),
+          lebar: !Number.isNaN(lebarNum) ? lebarNum : (dom.inputLebar.value.trim() || ''),
+          tinggi: !Number.isNaN(tinggiNum) ? tinggiNum : (dom.inputTinggi.value.trim() || ''),
+          status: statusValue,
+        };
+
+        if (editingId) {
+          const idx = records.findIndex((r) => r.id === editingId);
+          if (idx !== -1) {
+            records[idx] = entryPayload;
+          } else {
+            records.unshift(entryPayload);
+          }
+        } else {
+          records.unshift(entryPayload);
+        }
+
+        if (!saveToStorage()) return;
+
+        renderHistory();
+        resetForm(true);
+
+        if (statusValue === 'Simpan') {
+          showAlert(`${entryPayload.noResi} — Simpan`, 'success');
+        } else {
+          showAlert(`${entryPayload.noResi} — Gagal`, 'warning');
+        }
+      }
+
+      function startEditRecord(id) {
+        const target = records.find((r) => r.id === id);
+        if (!target) return;
+
+        editingId = target.id;
+        dom.inputResi.value = target.noResi === '-' ? '' : target.noResi;
+        dom.inputPanjang.value = target.panjang !== '' ? String(target.panjang) : '';
+        dom.inputLebar.value = target.lebar !== '' ? String(target.lebar) : '';
+        dom.inputTinggi.value = target.tinggi !== '' ? String(target.tinggi) : '';
+
+        const autoCalc = computeAutoWeight();
+
+        const targetBeratNum = parsePositiveNumber(target.berat);
+        if (autoCalc !== null && !Number.isNaN(targetBeratNum) && roundWeight(targetBeratNum) === autoCalc) {
+          isManualWeight = false;
+          dom.inputBerat.value = String(autoCalc);
+          dom.weightModeBadge.textContent = 'Otomatis';
+          dom.weightModeBadge.className = 'rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800';
+        } else {
+          isManualWeight = target.berat !== '';
+          dom.inputBerat.value = target.berat !== '' ? String(target.berat) : '';
+          dom.weightModeBadge.textContent = isManualWeight ? 'Manual' : 'Otomatis';
+          dom.weightModeBadge.className = isManualWeight
+            ? 'rounded-md bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800'
+            : 'rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800';
+        }
+
+        dom.formModeTitle.textContent = 'Edit Pengukuran';
+        dom.btnCancelEdit.classList.remove('hidden');
+        dom.btnSimpan.textContent = 'Update';
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function deleteRecord(id) {
+        records = records.filter((r) => r.id !== id);
+        if (editingId === id) {
+          resetForm(true);
+        }
+        saveToStorage();
+        renderHistory();
+      }
+
+      function clearAllRecords() {
+        if (records.length === 0) return;
+        records = [];
+        resetForm(true);
+        saveToStorage();
+        renderHistory();
+      }
+
+      // =========================================================================
+      // RENDER RIWAYAT
+      // =========================================================================
+      function renderHistory() {
+        const query = dom.searchResiInput.value.trim().toLowerCase();
+        const statusFilter = dom.filterStatusSelect.value;
+
+        const savedCount = records.filter((r) => r.status === 'Simpan').length;
+        const failedCount = records.filter((r) => r.status === 'Gagal').length;
+
+        dom.savedCountText.textContent = String(savedCount);
+        dom.failedCountText.textContent = String(failedCount);
+        updateStorageBadge();
+
+        const filtered = records.filter((item) => {
+          const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
+          const matchesResi = !query || String(item.noResi).toLowerCase().includes(query);
+          return matchesStatus && matchesResi;
+        });
+
+        dom.historyList.innerHTML = '';
+
+        if (filtered.length === 0) {
+          const emptyEl = document.createElement('div');
+          emptyEl.className = 'rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center text-xs font-semibold text-slate-400';
+          emptyEl.textContent = 'Kosong';
+          dom.historyList.appendChild(emptyEl);
+          return;
+        }
+
+        filtered.forEach((item) => {
+          const card = document.createElement('div');
+          card.className = 'rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2';
+
+          const topRow = document.createElement('div');
+          topRow.className = 'flex items-start justify-between gap-2';
+
+          const infoDiv = document.createElement('div');
+          infoDiv.className = 'min-w-0';
+
+          const resiTitle = document.createElement('div');
+          resiTitle.className = 'text-sm sm:text-base font-extrabold text-slate-900 break-all';
+          resiTitle.textContent = item.noResi || '-';
+
+          const dateSub = document.createElement('div');
+          dateSub.className = 'text-xs text-slate-500 tabular-nums';
+          dateSub.textContent = item.tanggal || '-';
+
+          infoDiv.appendChild(resiTitle);
+          infoDiv.appendChild(dateSub);
+
+          const badge = document.createElement('span');
+          const isSaved = item.status === 'Simpan';
+          badge.className = isSaved
+            ? 'shrink-0 rounded-full px-2.5 py-1 text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200'
+            : 'shrink-0 rounded-full px-2.5 py-1 text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200';
+          badge.textContent = item.status;
+
+          topRow.appendChild(infoDiv);
+          topRow.appendChild(badge);
+
+          const metricsRow = document.createElement('div');
+          metricsRow.className = 'grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs bg-white rounded-lg p-2 border border-slate-200/80 tabular-nums';
+
+          const pText = item.panjang !== '' ? `${item.panjang} cm` : '-';
+          const lText = item.lebar !== '' ? `${item.lebar} cm` : '-';
+          const tText = item.tinggi !== '' ? `${item.tinggi} cm` : '-';
+          const bText = item.berat !== '' ? `${item.berat} kg` : '-';
+
+          metricsRow.innerHTML = `
+            <div><span class="text-slate-400">P:</span> <strong class="text-slate-800">${pText}</strong></div>
+            <div><span class="text-slate-400">L:</span> <strong class="text-slate-800">${lText}</strong></div>
+            <div><span class="text-slate-400">T:</span> <strong class="text-slate-800">${tText}</strong></div>
+            <div><span class="text-slate-400">Berat:</span> <strong class="text-slate-900">${bText}</strong></div>
+          `;
+
+          const actionsRow = document.createElement('div');
+          actionsRow.className = 'flex items-center justify-end gap-2 pt-0.5';
+
+          const btnEdit = document.createElement('button');
+          btnEdit.type = 'button';
+          btnEdit.className = 'rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-bold px-3 py-1.5 transition';
+          btnEdit.textContent = 'Edit';
+          btnEdit.addEventListener('click', () => startEditRecord(item.id));
+
+          const btnDel = document.createElement('button');
+          btnDel.type = 'button';
+          btnDel.className = 'rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold px-3 py-1.5 transition';
+          btnDel.textContent = 'Hapus';
+          btnDel.addEventListener('click', () => deleteRecord(item.id));
+
+          actionsRow.appendChild(btnEdit);
+          actionsRow.appendChild(btnDel);
+
+          card.appendChild(topRow);
+          card.appendChild(metricsRow);
+          card.appendChild(actionsRow);
+
+          dom.historyList.appendChild(card);
+        });
+      }
+
+      // =========================================================================
+      // EKSPOR / DOWNLOAD FILE XLSX (7 KOLOM WAJIB SESUAI PRD)
+      // =========================================================================
+      function buildPureOoxmlXlsxBlob(rows, headers) {
+        // Generator ZIP + OOXML (.xlsx) murni tanpa ketergantungan jaringan eksternal
+        const crcTable = (() => {
+          const table = new Uint32Array(256);
+          for (let n = 0; n < 256; n++) {
+            let c = n;
+            for (let k = 0; k < 8; k++) {
+              c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+            }
+            table[n] = c >>> 0;
+          }
+          return table;
+        })();
+
+        const crc32 = (bytes) => {
+          let c = 0xffffffff;
+          for (let i = 0; i < bytes.length; i++) {
+            c = crcTable[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+          }
+          return (c ^ 0xffffffff) >>> 0;
+        };
+
+        const colLetter = (index) => {
+          let idx = index;
+          let letters = '';
+          while (idx >= 0) {
+            letters = String.fromCharCode(65 + (idx % 26)) + letters;
+            idx = Math.floor(idx / 26) - 1;
+          }
+          return letters;
+        };
+
+        const escapeXml = (str) =>
+          String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+
+        const allMatrix = [
+          headers.map((h) => ({ type: 'str', value: h })),
+          ...rows.map((r) =>
+            headers.map((col) => {
+              const val = r[col];
+              const isNumCol = ['Berat', 'Panjang', 'Lebar', 'Tinggi'].includes(col);
+              const numVal = Number(val);
+              if (isNumCol && val !== '' && val !== null && val !== undefined && Number.isFinite(numVal)) {
+                return { type: 'num', value: numVal };
+              }
+              return { type: 'str', value: val ?? '' };
+            })
+          ),
+        ];
+
+        const sheetRowsXml = allMatrix
+          .map((rowCells, rIdx) => {
+            const rowNum = rIdx + 1;
+            const cellsXml = rowCells
+              .map((cell, cIdx) => {
+                const ref = `${colLetter(cIdx)}${rowNum}`;
+                if (cell.type === 'num') {
+                  return `<c r="${ref}"><v>${cell.value}</v></c>`;
+                }
+                return `<c r="${ref}" t="inlineStr"><is><t>${escapeXml(cell.value)}</t></is></c>`;
+              })
+              .join('');
+            return `<row r="${rowNum}">${cellsXml}</row>`;
+          })
+          .join('');
+
+        const files = [
+          {
+            name: '[Content_Types].xml',
+            content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`,
+          },
+          {
+            name: '_rels/.rels',
+            content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`,
+          },
+          {
+            name: 'xl/workbook.xml',
+            content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="DataPengukuran" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>`,
+          },
+          {
+            name: 'xl/_rels/workbook.xml.rels',
+            content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`,
+          },
+          {
+            name: 'xl/worksheets/sheet1.xml',
+            content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>${sheetRowsXml}</sheetData>
+</worksheet>`,
+          },
+        ];
+
+        const encoder = new TextEncoder();
+        const localParts = [];
+        const centralParts = [];
+        let offset = 0;
+
+        for (const file of files) {
+          const nameBytes = encoder.encode(file.name);
+          const dataBytes = encoder.encode(file.content);
+          const checksum = crc32(dataBytes);
+
+          const localHeader = new Uint8Array(30 + nameBytes.length);
+          const lv = new DataView(localHeader.buffer);
+          lv.setUint32(0, 0x04034b50, true);
+          lv.setUint16(4, 20, true);
+          lv.setUint16(6, 0x0800, true); // UTF-8 filename flag
+          lv.setUint16(8, 0, true); // Store (no compression)
+          lv.setUint16(10, 0, true);
+          lv.setUint16(12, 0, true);
+          lv.setUint32(14, checksum, true);
+          lv.setUint32(18, dataBytes.length, true);
+          lv.setUint32(22, dataBytes.length, true);
+          lv.setUint16(26, nameBytes.length, true);
+          lv.setUint16(28, 0, true);
+          localHeader.set(nameBytes, 30);
+
+          localParts.push(localHeader, dataBytes);
+
+          const centralHeader = new Uint8Array(46 + nameBytes.length);
+          const cv = new DataView(centralHeader.buffer);
+          cv.setUint32(0, 0x02014b50, true);
+          cv.setUint16(4, 20, true);
+          cv.setUint16(6, 20, true);
+          cv.setUint16(8, 0x0800, true);
+          cv.setUint16(10, 0, true);
+          cv.setUint16(12, 0, true);
+          cv.setUint16(14, 0, true);
+          cv.setUint32(16, checksum, true);
+          cv.setUint32(20, dataBytes.length, true);
+          cv.setUint32(24, dataBytes.length, true);
+          cv.setUint16(28, nameBytes.length, true);
+          cv.setUint16(30, 0, true);
+          cv.setUint16(32, 0, true);
+          cv.setUint16(34, 0, true);
+          cv.setUint16(36, 0, true);
+          cv.setUint32(38, 0, true);
+          cv.setUint32(42, offset, true);
+          centralHeader.set(nameBytes, 46);
+
+          centralParts.push(centralHeader);
+          offset += localHeader.length + dataBytes.length;
+        }
+
+        const centralSize = centralParts.reduce((acc, part) => acc + part.length, 0);
+        const eocd = new Uint8Array(22);
+        const ev = new DataView(eocd.buffer);
+        ev.setUint32(0, 0x06054b50, true);
+        ev.setUint16(4, 0, true);
+        ev.setUint16(6, 0, true);
+        ev.setUint16(8, files.length, true);
+        ev.setUint16(10, files.length, true);
+        ev.setUint32(12, centralSize, true);
+        ev.setUint32(16, offset, true);
+        ev.setUint16(20, 0, true);
+
+        return new Blob([...localParts, ...centralParts, eocd], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+      }
+
+      function downloadXlsx() {
+        if (records.length === 0) {
+          showAlert('Data kosong', 'warning');
+          return;
+        }
+
+        const rows = records.map((r) => ({
+          Tanggal: r.tanggal,
+          'No Resi': r.noResi,
+          Berat: r.berat,
+          Panjang: r.panjang,
+          Lebar: r.lebar,
+          Tinggi: r.tinggi,
+          Status: r.status === 'Gagal' ? 'Gagal' : 'Simpan',
+        }));
+
+        const fileName = `AppBulky_${formatFileDate()}.xlsx`;
+
+        try {
+          if (typeof window.XLSX !== 'undefined' && window.XLSX.utils) {
+            const ws = window.XLSX.utils.json_to_sheet(rows, { header: EXPORT_COLUMNS });
+            const wb = window.XLSX.utils.book_new();
+            window.XLSX.utils.book_append_sheet(wb, ws, 'DataPengukuran');
+            window.XLSX.writeFile(wb, fileName);
+            showAlert(fileName, 'success');
+            return;
+          }
+        } catch (err) {
+          // Lanjut ke generator OOXML .xlsx lokal
+        }
+
+        const blob = buildPureOoxmlXlsxBlob(rows, EXPORT_COLUMNS);
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = fileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showAlert(fileName, 'success');
+      }
+
+      // =========================================================================
+      // INISIALISASI EVENT LISTENERS
+      // =========================================================================
+      function bindEvents() {
+        window.addEventListener('online', updateNetworkBadge);
+        window.addEventListener('offline', updateNetworkBadge);
+        window.addEventListener('beforeunload', () => {
+          stopResiCamera();
+          stopMeasureCamera();
+        });
+
+        dom.btnCloseAlert.addEventListener('click', hideAlert);
+
+        dom.btnScanResi.addEventListener('click', () => {
+          if (!dom.resiCameraBox.classList.contains('hidden')) {
+            stopResiCamera();
+          } else {
+            startResiCamera();
+          }
+        });
+        dom.btnCloseResiCam.addEventListener('click', stopResiCamera);
+
+        dom.btnMeasureCamera.addEventListener('click', () => {
+          if (!dom.measureCameraBox.classList.contains('hidden')) {
+            stopMeasureCamera();
+          } else {
+            startMeasureCamera();
+          }
+        });
+        dom.btnCloseMeasureCam.addEventListener('click', stopMeasureCamera);
+        dom.btnApplyEstimate.addEventListener('click', applyCameraEstimateToInputs);
+        dom.inputRefWidthCm.addEventListener('input', estimateDimensionsFromCamera);
+        dom.inputEstHeightCm.addEventListener('input', estimateDimensionsFromCamera);
+
+        [dom.inputPanjang, dom.inputLebar, dom.inputTinggi].forEach((el) => {
+          el.addEventListener('input', syncWeightCalculation);
+        });
+
+        dom.selectDivider.addEventListener('change', () => {
+          saveToStorage();
+          syncWeightCalculation();
+        });
+
+        dom.inputBerat.addEventListener('input', () => {
+          isManualWeight = dom.inputBerat.value.trim() !== '';
+          syncWeightCalculation();
+        });
+
+        dom.btnUseAutoWeight.addEventListener('click', () => {
+          isManualWeight = false;
+          syncWeightCalculation();
+        });
+
+        dom.btnSimpan.addEventListener('click', handleSaveRecord);
+        dom.btnReset.addEventListener('click', () => resetForm(false));
+        dom.btnCancelEdit.addEventListener('click', () => resetForm(false));
+
+        dom.searchResiInput.addEventListener('input', renderHistory);
+        dom.filterStatusSelect.addEventListener('change', renderHistory);
+        dom.btnDownloadXlsx.addEventListener('click', downloadXlsx);
+        dom.btnClearHistory.addEventListener('click', clearAllRecords);
+      }
+
+      // Jalankan inisialisasi aplikasi
+      setupPwaSupport();
+      updateNetworkBadge();
+      loadFromStorage();
+      bindEvents();
+      syncWeightCalculation();
+      renderHistory();
+    })();
+  </script>
+</body>
+</html>
